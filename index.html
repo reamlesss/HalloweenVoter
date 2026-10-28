@@ -3,77 +3,46 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#16120f">
-    <meta name="description" content="Vote for the best costume at the Halloween party.">
-    <title>Costume Royale — Halloween Party</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#fffaf5">
+    <meta name="description" content="Vote for your favourite person at the Halloween party.">
+    <title>Halloween Costume Vote</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script src="script.js" defer></script>
   </head>
   <body>
-    <div class="page-shell">
-      <header class="topbar">
-        <a class="brand" href="./" aria-label="Costume Royale home">
-          <span class="brand-mark" aria-hidden="true">✳</span>
-          <span>COSTUME <span class="brand-accent">ROYALE</span></span>
-        </a>
-        <div class="live-pill"><span class="live-dot"></span><span id="connection-status">CONNECTING</span></div>
+    <main class="page-shell">
+      <header class="page-header">
+        <div>
+          <h1 id="page-title">Costume vote</h1>
+          <p id="connection-status" class="connection-status">Connecting…</p>
+        </div>
+        <button id="refresh-button" class="refresh-button" type="button">Refresh</button>
       </header>
 
-      <main>
-        <section class="hero" aria-labelledby="page-title">
-          <div class="eyebrow"><span aria-hidden="true">✦</span> HALLOWEEN PARTY 2026 <span aria-hidden="true">✦</span></div>
-          <h1 id="page-title">Who wore it<br><span class="title-accent">best?</span></h1>
-          <p class="hero-copy">The costumes are legendary. The winner gets bragging rights until next Halloween.</p>
-          <div class="vote-count"><span id="total-votes">0</span> <span id="vote-label">VOTES CAST</span><span class="count-divider">/</span><span id="costume-count">0</span> COSTUMES</div>
-        </section>
+      <section class="poll-section" aria-labelledby="entries-heading">
+        <div class="section-heading">
+          <h2 id="entries-heading">Vote for your favourite</h2>
+          <p class="total-votes"><span id="total-votes">0</span> <span id="vote-label">votes</span></p>
+        </div>
+        <div id="contestant-list" class="contestant-list" aria-live="polite">
+          <div class="loading-card">Loading…</div>
+        </div>
+        <p id="vote-message" class="vote-message" role="status" aria-live="polite"></p>
+        <button id="withdraw-vote-button" class="withdraw-vote-button" type="button" hidden>
+          Take back my vote
+        </button>
+      </section>
 
-        <section class="entry-section" aria-labelledby="entries-heading">
-          <div class="section-heading">
-            <div>
-              <p class="section-kicker">THE LINEUP</p>
-              <h2 id="entries-heading">Pick your favourite</h2>
-            </div>
-            <div class="section-actions">
-              <span class="heading-bat" aria-hidden="true">✦</span>
-              <button id="refresh-button" class="refresh-button" type="button" aria-label="Refresh vote totals">
-                <span aria-hidden="true">↻</span> Refresh votes
-              </button>
-            </div>
-          </div>
-          <div id="contestant-list" class="contestant-list" aria-live="polite">
-            <div class="loading-card">Summoning the costumes…</div>
-          </div>
-          <p id="vote-message" class="vote-message" role="status" aria-live="polite"></p>
-        </section>
-
-        <section class="add-section" aria-labelledby="add-heading">
-          <div class="add-copy">
-            <span class="add-icon" aria-hidden="true">＋</span>
-            <div>
-              <h2 id="add-heading">Missing from the lineup?</h2>
-              <p>Add a costume for everyone to vote on.</p>
-            </div>
-          </div>
-          <form id="contestant-form" class="contestant-form">
-            <label class="sr-only" for="contestant-name">Name</label>
-            <input id="contestant-name" name="name" maxlength="40" placeholder="Their name" autocomplete="off" required>
-            <label class="sr-only" for="costume-name">Costume</label>
-            <input id="costume-name" name="costume" maxlength="50" placeholder="Costume (e.g. Vampire)" autocomplete="off" required>
-            <button type="submit" class="add-button">Add costume <span aria-hidden="true">↗</span></button>
-          </form>
-        </section>
-      </main>
-
-      <footer>
-        <span>ONE VOTE PER BROWSER</span>
-        <span class="footer-divider" aria-hidden="true">✳</span>
-        <span>AUTO-REFRESH EVERY 15 SECONDS</span>
-      </footer>
-    </div>
+      <section class="add-section" aria-labelledby="add-heading">
+        <h2 id="add-heading">Add a name</h2>
+        <form id="contestant-form" class="contestant-form">
+          <label class="sr-only" for="contestant-name">Name</label>
+          <input id="contestant-name" name="name" maxlength="40" placeholder="Name" autocomplete="off" required>
+          <button type="submit" class="add-button">Add</button>
+        </form>
+      </section>
+    </main>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </body>
 </html>

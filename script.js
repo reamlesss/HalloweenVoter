@@ -7,16 +7,17 @@ const contestantList = document.querySelector("#contestant-list");
 const voteMessage = document.querySelector("#vote-message");
 const voteTotal = document.querySelector("#total-votes");
 const voteLabel = document.querySelector("#vote-label");
-const costumeCount = document.querySelector("#costume-count");
 const connectionStatus = document.querySelector("#connection-status");
 const contestantForm = document.querySelector("#contestant-form");
 const refreshButton = document.querySelector("#refresh-button");
+const withdrawVoteButton = document.querySelector("#withdraw-vote-button");
 const toast = document.querySelector("#toast");
 
 let toastTimeout;
 let databaseClient;
 let loadingResults = false;
 let refreshQueued = false;
+let votingInProgress = false;
 
 function showToast(message) {
   toast.textContent = message;
@@ -43,18 +44,15 @@ function getOrCreateParticipantId() {
 
 function render(contestants) {
   const votedFor = localStorage.getItem(voteKey);
-  const highestVotes = Math.max(0, ...contestants.map((contestant) => contestant.votes));
+  withdrawVoteButton.hidden = !votedFor;
+  withdrawVoteButton.disabled = votingInProgress;
   contestantList.replaceChildren();
   voteTotal.textContent = contestants.reduce((sum, contestant) => sum + contestant.votes, 0);
-  voteLabel.textContent = Number(voteTotal.textContent) === 1 ? "VOTE CAST" : "VOTES CAST";
-  costumeCount.textContent = contestants.length;
+  voteLabel.textContent = Number(voteTotal.textContent) === 1 ? "vote" : "votes";
 
   if (contestants.length === 0) {
     const empty = makeElement("div", "empty-state");
-    empty.append(
-      makeElement("span", "empty-icon", "♧"),
-      makeElement("p", "", "No costumes yet. Add the first one below!")
-    );
+    empty.textContent = "No names yet. Add the first one below.";
     contestantList.append(empty);
     voteMessage.textContent = "";
     return;
@@ -64,50 +62,32 @@ function render(contestants) {
     (first, second) => second.votes - first.votes || new Date(first.created_at) - new Date(second.created_at)
   );
 
-  for (const [index, contestant] of sortedContestants.entries()) {
+  for (const contestant of sortedContestants) {
     const card = makeElement("article", "contestant-card");
     if (contestant.id === votedFor) card.classList.add("is-selected");
-    const position = makeElement("span", "contestant-rank", String(index + 1).padStart(2, "0"));
-    const identity = makeElement("div", "contestant-identity");
-    identity.append(
-      makeElement("h3", "contestant-name", contestant.name),
-      makeElement("p", "contestant-costume", contestant.costume)
-    );
-    const results = makeElement("div", "contestant-results");
-    const resultText = makeElement("div", "result-text");
-    resultText.append(
-      makeElement("span", "result-count", String(contestant.votes)),
-      makeElement("span", "result-label", contestant.votes === 1 ? "VOTE" : "VOTES")
-    );
-    const bar = makeElement("div", "vote-bar");
-    bar.setAttribute("role", "progressbar");
-    bar.setAttribute("aria-label", `${contestant.votes} votes`);
-    bar.setAttribute("aria-valuemin", "0");
-    bar.setAttribute("aria-valuemax", String(Math.max(highestVotes, 1)));
-    bar.setAttribute("aria-valuenow", String(contestant.votes));
-    const fill = makeElement("span", "vote-bar-fill");
-    fill.style.width = `${highestVotes === 0 ? 0 : (contestant.votes / highestVotes) * 100}%`;
-    bar.append(fill);
-    results.append(resultText, bar);
+    const name = makeElement("h3", "contestant-name", contestant.name);
+    const voteCount = makeElement("span", "result-count", `${contestant.votes} ${contestant.votes === 1 ? "vote" : "votes"}`);
 
     const voteButton = makeElement("button", "vote-button");
     voteButton.type = "button";
-    voteButton.disabled = Boolean(votedFor);
-    voteButton.setAttribute("aria-label", votedFor ? `${contestant.name}, vote already submitted` : `Vote for ${contestant.name}`);
-    voteButton.textContent = contestant.id === votedFor ? "YOUR PICK" : votedFor ? "VOTED" : "VOTE";
-    voteButton.addEventListener("click", () => castVote(contestant.id, voteButton));
+    voteButton.disabled = votingInProgress || Boolean(votedFor);
+    voteButton.setAttribute("aria-label", contestant.id === votedFor
+      ? `${contestant.name}, your current vote`
+      : votedFor ? "Vote already submitted" : `Vote for ${contestant.name}`);
+    voteButton.textContent = contestant.id === votedFor ? "Your vote" : "Vote";
+    voteButton.addEventListener("click", () => castVote(contestant.id));
 
-    card.append(position, identity, results, voteButton);
+    card.append(name, voteCount, voteButton);
     contestantList.append(card);
   }
 
   if (votedFor) {
     const picked = contestants.find((contestant) => contestant.id === votedFor);
     voteMessage.textContent = picked
-      ? `Your vote is in for ${picked.name}. Refresh to see the latest results.`
-      : "Your vote is already in. Refresh to see the latest results.";
+      ? `Your vote is for ${picked.name}. Take it back to vote again.`
+      : "Your vote is in. Take it back to vote again.";
   } else {
-    voteMessage.textContent = "Choose one costume to cast your vote.";
+    voteMessage.textContent = "Choose your favourite person to cast your vote.";
   }
 }
 
@@ -128,12 +108,10 @@ async function loadResults({ announce = false, notifyOnError = true } = {}) {
       votes: Number(contestant.votes)
     }));
     render(contestants);
-    connectionStatus.textContent = "CONNECTED";
-    document.querySelector(".live-pill").classList.add("is-live");
+    connectionStatus.textContent = "Connected · updates every 15 seconds";
     if (announce) showToast("Vote totals refreshed.");
   } catch (error) {
-    connectionStatus.textContent = "OFFLINE";
-    document.querySelector(".live-pill").classList.remove("is-live");
+    connectionStatus.textContent = "Unable to connect";
     if (notifyOnError) showToast(`Could not load votes: ${error.message}`);
   } finally {
     loadingResults = false;
@@ -146,23 +124,63 @@ async function loadResults({ announce = false, notifyOnError = true } = {}) {
   }
 }
 
-async function castVote(contestantId, button) {
-  if (localStorage.getItem(voteKey)) return;
-  button.disabled = true;
+async function castVote(contestantId) {
+  const previousVote = localStorage.getItem(voteKey);
+  if (votingInProgress || previousVote === contestantId) return;
+  votingInProgress = true;
+  let failureMessage;
+  contestantList.querySelectorAll(".vote-button").forEach((voteButton) => {
+    voteButton.disabled = true;
+  });
   try {
-    const { error } = await databaseClient.rpc("cast_vote", {
+    const { error } = await databaseClient.rpc("set_vote", {
       p_voter_id: getOrCreateParticipantId(),
       p_contestant_id: contestantId
     });
     if (error) throw error;
     localStorage.setItem(voteKey, contestantId);
-    showToast("Your vote is in. May the best costume win!");
-    await loadResults();
+    showToast(previousVote ? "Your vote has been changed." : "Your vote is in.");
   } catch (error) {
-    showToast(error.message.includes("already voted")
-      ? "This browser has already voted."
-      : `Your vote could not be submitted: ${error.message}`);
+    failureMessage = error.code === "PGRST202" || error.message.includes("set_vote")
+      ? "Vote changes are not enabled in Supabase yet. Run the vote-update SQL in README.md, then refresh."
+      : `Your vote could not be changed: ${error.message}`;
+  } finally {
+    votingInProgress = false;
     await loadResults();
+    if (failureMessage) {
+      voteMessage.textContent = failureMessage;
+      showToast(failureMessage);
+    }
+  }
+}
+
+async function withdrawVote() {
+  if (votingInProgress || !localStorage.getItem(voteKey)) return;
+  votingInProgress = true;
+  withdrawVoteButton.disabled = true;
+  contestantList.querySelectorAll(".vote-button").forEach((voteButton) => {
+    voteButton.disabled = true;
+  });
+
+  let failureMessage;
+  try {
+    const { error } = await databaseClient.rpc("withdraw_vote", {
+      p_voter_id: getOrCreateParticipantId()
+    });
+    if (error) throw error;
+    localStorage.removeItem(voteKey);
+    showToast("Your vote was taken back. You can vote again.");
+  } catch (error) {
+    failureMessage = error.code === "PGRST202" || error.message.includes("withdraw_vote")
+      ? "Vote withdrawal is not enabled in Supabase yet. Run the withdraw-vote SQL in README.md, then refresh."
+      : `Your vote could not be taken back: ${error.message}`;
+  } finally {
+    votingInProgress = false;
+    await loadResults();
+    if (failureMessage) {
+      voteMessage.textContent = failureMessage;
+      showToast(failureMessage);
+    }
   }
 }
 
@@ -173,13 +191,12 @@ contestantForm.addEventListener("submit", async (event) => {
   submitButton.disabled = true;
   try {
     const { error } = await databaseClient.from("contestants").insert({
-      name: String(formData.get("name")).trim(),
-      costume: String(formData.get("costume")).trim()
+      name: String(formData.get("name")).trim()
     });
     if (error) throw error;
     contestantForm.reset();
     document.querySelector("#contestant-name").focus();
-    showToast("Costume added to the lineup!");
+    showToast("Name added.");
     await loadResults();
   } catch (error) {
     showToast(`Costume could not be added: ${error.message}`);
@@ -189,6 +206,7 @@ contestantForm.addEventListener("submit", async (event) => {
 });
 
 refreshButton.addEventListener("click", () => loadResults({ announce: true }));
+withdrawVoteButton.addEventListener("click", withdrawVote);
 
 function start() {
   if (!window.supabase?.createClient) {

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#fffaf5">
     <meta name="description" content="Vote for your favourite person at the Halloween party.">
-    <title>Halloween Costume Vote</title>
+    <title>Halloweenská soutěž</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script src="script.js" defer></script>
@@ -14,27 +14,28 @@
     <main class="page-shell">
       <header class="page-header">
         <div>
-          <h1 id="page-title">Costume vote</h1>
-          <p id="connection-status" class="connection-status">Connecting…</p>
+          <h1 id="page-title">Hlasování o nejlepší kostým</h1>
+          <p id="connection-status" class="connection-status">Připojeno</p>
         </div>
-        <button id="refresh-button" class="refresh-button" type="button">Refresh</button>
+        <button id="refresh-button" class="refresh-button" type="button">Obnovit</button>
       </header>
 
       <section class="poll-section" aria-labelledby="entries-heading">
         <div class="section-heading">
-          <h2 id="entries-heading">Vote for your favourite</h2>
-          <p class="total-votes"><span id="total-votes">0</span> <span id="vote-label">votes</span></p>
+          <h2 id="entries-heading"><i>Hlasuj pro svého oblíbence!</i></h2>
+          <p class="total-votes"><span id="total-votes">0</span> <span id="vote-label">Hlasy</span></p>
         </div>
         <div id="contestant-list" class="contestant-list" aria-live="polite">
-          <div class="loading-card">Loading…</div>
+          <div class="loading-card">Načítám...</div>
         </div>
         <p id="vote-message" class="vote-message" role="status" aria-live="polite"></p>
         <button id="withdraw-vote-button" class="withdraw-vote-button" type="button" hidden>
-          Take back my vote
+          Vrátit hlas
         </button>
       </section>
 
       <section class="add-section" aria-labelledby="add-heading">
+        <h1>Tohle odstranim az to budu mit hotovy</h1>
         <h2 id="add-heading">Add a name</h2>
         <form id="contestant-form" class="contestant-form">
           <label class="sr-only" for="contestant-name">Name</label>

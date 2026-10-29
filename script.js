@@ -48,13 +48,13 @@ function render(contestants) {
   withdrawVoteButton.disabled = votingInProgress;
   contestantList.replaceChildren();
   voteTotal.textContent = contestants.reduce((sum, contestant) => sum + contestant.votes, 0);
-  voteLabel.textContent = Number(voteTotal.textContent) === 1 ? "vote" : "votes";
+  voteLabel.textContent = Number(voteTotal.textContent) === 1 ? "Hlas" : "Hlasů";
 
   if (contestants.length === 0) {
     const empty = makeElement("div", "empty-state");
     empty.textContent = "No names yet. Add the first one below.";
     contestantList.append(empty);
-    voteMessage.textContent = "";
+    voteMessage.textContent = "ahoj";
     return;
   }
 
@@ -74,7 +74,7 @@ function render(contestants) {
     voteButton.setAttribute("aria-label", contestant.id === votedFor
       ? `${contestant.name}, your current vote`
       : votedFor ? "Vote already submitted" : `Vote for ${contestant.name}`);
-    voteButton.textContent = contestant.id === votedFor ? "Your vote" : "Vote";
+    voteButton.textContent = contestant.id === votedFor ? "Tvůj výběr" : "Hlasovat";
     voteButton.addEventListener("click", () => castVote(contestant.id));
 
     card.append(name, voteCount, voteButton);
@@ -84,10 +84,10 @@ function render(contestants) {
   if (votedFor) {
     const picked = contestants.find((contestant) => contestant.id === votedFor);
     voteMessage.textContent = picked
-      ? `Your vote is for ${picked.name}. Take it back to vote again.`
-      : "Your vote is in. Take it back to vote again.";
+      ? `Hlasoval/a jsi pro ${picked.name}. Můžeš ho vrátit a hlasovat znovu`
+      : "Máš odhlasováno. Vem si hlas zpátky a hlasuj znova.";
   } else {
-    voteMessage.textContent = "Choose your favourite person to cast your vote.";
+    voteMessage.textContent = "Hello its me";
   }
 }
 
@@ -99,7 +99,7 @@ async function loadResults({ announce = false, notifyOnError = true } = {}) {
   loadingResults = true;
   refreshButton.disabled = true;
   refreshButton.classList.add("is-refreshing");
-  connectionStatus.textContent = "UPDATING";
+  connectionStatus.textContent = "Načítám";
   try {
     const { data, error } = await databaseClient.rpc("get_vote_results");
     if (error) throw error;
@@ -108,10 +108,10 @@ async function loadResults({ announce = false, notifyOnError = true } = {}) {
       votes: Number(contestant.votes)
     }));
     render(contestants);
-    connectionStatus.textContent = "Connected · updates every 15 seconds";
-    if (announce) showToast("Vote totals refreshed.");
+    connectionStatus.textContent = "Připojeno · auto-refresh každých 15 sekund";
+    if (announce) showToast("Počet hlasů obnoven");
   } catch (error) {
-    connectionStatus.textContent = "Unable to connect";
+    connectionStatus.textContent = "Nelze se připojit";
     if (notifyOnError) showToast(`Could not load votes: ${error.message}`);
   } finally {
     loadingResults = false;
@@ -139,7 +139,7 @@ async function castVote(contestantId) {
     });
     if (error) throw error;
     localStorage.setItem(voteKey, contestantId);
-    showToast(previousVote ? "Your vote has been changed." : "Your vote is in.");
+    showToast(previousVote ? "Tvůj hlas byl změněn." : "Odhlasoval");
   } catch (error) {
     failureMessage = error.code === "PGRST202" || error.message.includes("set_vote")
       ? "Vote changes are not enabled in Supabase yet. Run the vote-update SQL in README.md, then refresh."
@@ -169,7 +169,7 @@ async function withdrawVote() {
     });
     if (error) throw error;
     localStorage.removeItem(voteKey);
-    showToast("Your vote was taken back. You can vote again.");
+    showToast("Tvůj hlas byl vrácen, hlasuj znovu!");
   } catch (error) {
     failureMessage = error.code === "PGRST202" || error.message.includes("withdraw_vote")
       ? "Vote withdrawal is not enabled in Supabase yet. Run the withdraw-vote SQL in README.md, then refresh."

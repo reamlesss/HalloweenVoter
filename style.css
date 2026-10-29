@@ -1,8 +1,8 @@
 :root {
   color-scheme: light;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #24211f;
-  background: #fffaf5;
+  color: #ffffff;
+  background: #433b33;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -13,7 +13,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: #fffaf5;
+  background: #1f1e1e;
 }
 
 button, input { font: inherit; }
@@ -46,8 +46,8 @@ h2 { font-size: 16px; line-height: 1.35; }
 .refresh-button, .add-button, .vote-button {
   min-height: 36px;
   padding: 0 13px;
-  border: 1px solid #e5ddd4;
-  border-radius: 6px;
+  border: 1px solid #f7f6f4;
+  border-radius: 13px;
   color: #342d27;
   background: #fff;
   font-size: 13px;
@@ -66,7 +66,7 @@ h2 { font-size: 16px; line-height: 1.35; }
   margin-bottom: 12px;
 }
 
-.total-votes { color: #77716c; font-size: 13px; white-space: nowrap; }
+.total-votes { color: #fbfaf9; font-size: 13px; white-space: nowrap; font-weight: bold;}
 .contestant-list { border-top: 1px solid #e8e1da; }
 
 .contestant-card {
@@ -81,37 +81,23 @@ h2 { font-size: 16px; line-height: 1.35; }
 
 .contestant-card.is-selected .contestant-name { color: #a23c11; }
 .contestant-name { overflow: hidden; font-size: 15px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.result-count { min-width: 44px; color: #77716c; font-size: 13px; text-align: right; white-space: nowrap; }
+.result-count { min-width: 44px; color: #fefcfb; font-size: 13px; text-align: right; white-space: nowrap; }
 
 .vote-button {
   min-width: 66px;
   min-height: 32px;
   padding: 0 10px;
-  color: #a23c11;
-  border-color: #e8c8b7;
-  background: #fff8f3;
+  color: #342d27;
+  border-color: #f0420e;
+  background: white;
   font-size: 12px;
 }
 
-.contestant-card.is-selected .vote-button { color: #77716c; border-color: #e5ddd4; background: #fff; }
+.contestant-card.is-selected .vote-button { color: #ffffff; border-color: #e5ddd4; background: #ff561d; }
 .loading-card, .empty-state { padding: 24px 0; color: #77716c; font-size: 14px; }
 .vote-message { min-height: 18px; margin-top: 12px; color: #77716c; font-size: 13px; }
-.withdraw-vote-button {
-  margin-top: 8px;
-  padding: 0;
-  border: 0;
-  color: #77716c;
-  background: transparent;
-  font-size: 13px;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
 
-.withdraw-vote-button:hover { color: #a23c11; }
-.withdraw-vote-button:disabled { cursor: wait; opacity: .6; }
-.withdraw-vote-button[hidden] { display: none; }
-
-.add-section { margin-top: 36px; }
+/* .add-section { margin-top: 36px; }
 .add-section h2 { margin-bottom: 10px; }
 .contestant-form { display: flex; gap: 8px; }
 .contestant-form input {
@@ -125,12 +111,21 @@ h2 { font-size: 16px; line-height: 1.35; }
   color: #24211f;
   background: #fff;
   font-size: 14px;
-}
+} */
 
-.contestant-form input:focus { border-color: #b94f1c; }
+/* .contestant-form input:focus { border-color: #b94f1c; }
 .contestant-form input::placeholder { color: #918983; }
 .add-button { height: 40px; color: #fff; border-color: #a23c11; background: #a23c11; }
-.add-button:hover { border-color: #842f0c; background: #842f0c; }
+.add-button:hover { border-color: #842f0c; background: #842f0c; } */
+
+
+.withdraw-vote-button:hover { color: #a23c11; }
+.withdraw-vote-button:disabled { cursor: wait; opacity: .6; }
+.withdraw-vote-button[hidden] { display: none; }
+
+
+
+
 
 .toast {
   position: fixed;

@@ -1,10 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html lang="cs">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#fffaf5">
+    <meta name="theme-color" content="#f7f4ef">
     <meta name="description" content="Vote for your favourite person at the Halloween party.">
+    <meta name="referrer" content="no-referrer">
     <title>Halloweenská soutěž</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
@@ -14,16 +15,17 @@
     <main class="page-shell">
       <header class="page-header">
         <div>
+          <p class="eyebrow">Halloween costume poll</p>
           <h1 id="page-title">Hlasování o nejlepší kostým</h1>
           <p id="connection-status" class="connection-status">Připojeno</p>
+          <p id="voting-status" class="voting-status" aria-live="polite">Načítám stav hlasování</p>
         </div>
         <button id="refresh-button" class="refresh-button" type="button">Obnovit</button>
       </header>
 
       <section class="poll-section" aria-labelledby="entries-heading">
         <div class="section-heading">
-          <h2 id="entries-heading"><i>Hlasuj pro svého oblíbence!</i></h2>
-          <p class="total-votes"><span id="total-votes">0</span> <span id="vote-label">Hlasy</span></p>
+          <h2 id="entries-heading">Hlasuj pro svého oblíbence</h2>
         </div>
         <div id="contestant-list" class="contestant-list" aria-live="polite">
           <div class="loading-card">Načítám...</div>
@@ -35,11 +37,11 @@
       </section>
 
       <section class="add-section" aria-labelledby="add-heading">
-        <h1>Tohle odstranim az to budu mit hotovy</h1>¬ø
+        <h2 id="add-heading">Přidat soutěžícího</h2>
         <form id="contestant-form" class="contestant-form">
-          <label class="sr-only" for="contestant-name">Name</label>
-          <input id="contestant-name" name="name" maxlength="40" placeholder="Name" autocomplete="off" required>
-          <button type="submit" class="add-button">Add</button>
+          <label class="sr-only" for="contestant-name">Jméno soutěžícího</label>
+          <input id="contestant-name" name="name" maxlength="40" placeholder="Jméno soutěžícího" autocomplete="off" required>
+          <button type="submit" class="add-button">Přidat</button>
         </form>
       </section>
     </main>

@@ -5,9 +5,8 @@ const voteKey = "costume-royale-vote";
 
 const contestantList = document.querySelector("#contestant-list");
 const voteMessage = document.querySelector("#vote-message");
-const voteTotal = document.querySelector("#total-votes");
-const voteLabel = document.querySelector("#vote-label");
 const connectionStatus = document.querySelector("#connection-status");
+const votingStatus = document.querySelector("#voting-status");
 const contestantForm = document.querySelector("#contestant-form");
 const refreshButton = document.querySelector("#refresh-button");
 const withdrawVoteButton = document.querySelector("#withdraw-vote-button");
@@ -18,6 +17,7 @@ let databaseClient;
 let loadingResults = false;
 let refreshQueued = false;
 let votingInProgress = false;
+let votingOpen = false;
 
 function showToast(message) {
   toast.textContent = message;
@@ -45,49 +45,40 @@ function getOrCreateParticipantId() {
 function render(contestants) {
   const votedFor = localStorage.getItem(voteKey);
   withdrawVoteButton.hidden = !votedFor;
-  withdrawVoteButton.disabled = votingInProgress;
+  withdrawVoteButton.disabled = votingInProgress || !votingOpen;
   contestantList.replaceChildren();
-  voteTotal.textContent = contestants.reduce((sum, contestant) => sum + contestant.votes, 0);
-  voteLabel.textContent = Number(voteTotal.textContent) === 1 ? "Hlas" : "Hlasů";
 
   if (contestants.length === 0) {
-    const empty = makeElement("div", "empty-state");
-    empty.textContent = "No names yet. Add the first one below.";
-    contestantList.append(empty);
-    voteMessage.textContent = "ahoj";
-    return;
+    contestantList.append(makeElement("div", "empty-state", "Zatím tu nikdo není. Přidej prvního soutěžícího níže."));
+  } else {
+    const cards = document.createDocumentFragment();
+    for (const contestant of contestants) {
+      const card = makeElement("article", "contestant-card");
+      if (contestant.id === votedFor) card.classList.add("is-selected");
+      const name = makeElement("h3", "contestant-name", contestant.name);
+      const voteButton = makeElement("button", "vote-button");
+      voteButton.type = "button";
+      voteButton.disabled = votingInProgress || Boolean(votedFor) || !votingOpen;
+      voteButton.setAttribute("aria-label", contestant.id === votedFor
+        ? `${contestant.name}, tvůj současný hlas`
+        : votedFor ? "Hlas už byl odeslán" : `Hlasovat pro ${contestant.name}`);
+      voteButton.textContent = contestant.id === votedFor ? "Tvůj výběr" : "Hlasovat";
+      voteButton.addEventListener("click", () => castVote(contestant.id));
+      card.append(name, voteButton);
+      cards.append(card);
+    }
+    contestantList.replaceChildren(cards);
   }
 
-  const sortedContestants = [...contestants].sort(
-    (first, second) => second.votes - first.votes || new Date(first.created_at) - new Date(second.created_at)
-  );
-
-  for (const contestant of sortedContestants) {
-    const card = makeElement("article", "contestant-card");
-    if (contestant.id === votedFor) card.classList.add("is-selected");
-    const name = makeElement("h3", "contestant-name", contestant.name);
-    const voteCount = makeElement("span", "result-count", `${contestant.votes} ${contestant.votes === 1 ? "vote" : "votes"}`);
-
-    const voteButton = makeElement("button", "vote-button");
-    voteButton.type = "button";
-    voteButton.disabled = votingInProgress || Boolean(votedFor);
-    voteButton.setAttribute("aria-label", contestant.id === votedFor
-      ? `${contestant.name}, your current vote`
-      : votedFor ? "Vote already submitted" : `Vote for ${contestant.name}`);
-    voteButton.textContent = contestant.id === votedFor ? "Tvůj výběr" : "Hlasovat";
-    voteButton.addEventListener("click", () => castVote(contestant.id));
-
-    card.append(name, voteCount, voteButton);
-    contestantList.append(card);
-  }
-
-  if (votedFor) {
+  if (!votingOpen) {
+    voteMessage.textContent = "Hlasování je ukončeno. Hlasy jsou uzavřené.";
+  } else if (votedFor) {
     const picked = contestants.find((contestant) => contestant.id === votedFor);
     voteMessage.textContent = picked
-      ? `Hlasoval/a jsi pro ${picked.name}. Můžeš ho vrátit a hlasovat znovu`
-      : "Máš odhlasováno. Vem si hlas zpátky a hlasuj znova.";
+      ? `Hlasoval/a jsi pro ${picked.name}. Můžeš ho vrátit a hlasovat znovu.`
+      : "Máš odhlasováno. Vem si hlas zpátky a hlasuj znovu.";
   } else {
-    voteMessage.textContent = "Hello its me";
+    voteMessage.textContent = "Vyber jednoho soutěžícího a odešli svůj hlas.";
   }
 }
 
@@ -101,18 +92,29 @@ async function loadResults({ announce = false, notifyOnError = true } = {}) {
   refreshButton.classList.add("is-refreshing");
   connectionStatus.textContent = "Načítám";
   try {
-    const { data, error } = await databaseClient.rpc("get_vote_results");
-    if (error) throw error;
-    const contestants = data.map((contestant) => ({
-      ...contestant,
-      votes: Number(contestant.votes)
-    }));
-    render(contestants);
-    connectionStatus.textContent = "Připojeno · auto-refresh každých 15 sekund";
-    if (announce) showToast("Počet hlasů obnoven");
+    const [contestantsResult, statusResult] = await Promise.all([
+      databaseClient.rpc("get_contestants"),
+      databaseClient.rpc("get_poll_status")
+    ]);
+    if (contestantsResult.error) throw contestantsResult.error;
+    if (statusResult.error) throw statusResult.error;
+    votingOpen = statusResult.data === true;
+    votingStatus.textContent = votingOpen ? "Hlasování probíhá" : "Hlasování je ukončeno";
+    votingStatus.classList.toggle("is-closed", !votingOpen);
+    render(contestantsResult.data);
+    connectionStatus.textContent = "Připojeno · obnovuje se každých 15 sekund";
+    if (announce) showToast("Seznam byl obnoven.");
   } catch (error) {
+    votingOpen = false;
+    votingStatus.textContent = "Stav hlasování není dostupný";
+    votingStatus.classList.add("is-closed");
+    contestantList.replaceChildren(makeElement("div", "empty-state", "Výsledky nejsou dostupné. Zkus je obnovit."));
+    contestantList.querySelectorAll(".vote-button").forEach((button) => {
+      button.disabled = true;
+    });
+    withdrawVoteButton.disabled = true;
     connectionStatus.textContent = "Nelze se připojit";
-    if (notifyOnError) showToast(`Could not load votes: ${error.message}`);
+    if (notifyOnError) showToast(`Hlasování se nepodařilo načíst: ${error.message}`);
   } finally {
     loadingResults = false;
     refreshButton.disabled = false;
@@ -126,12 +128,12 @@ async function loadResults({ announce = false, notifyOnError = true } = {}) {
 
 async function castVote(contestantId) {
   const previousVote = localStorage.getItem(voteKey);
-  if (votingInProgress || previousVote === contestantId) return;
+  if (votingInProgress || !votingOpen || previousVote === contestantId) return;
   votingInProgress = true;
-  let failureMessage;
-  contestantList.querySelectorAll(".vote-button").forEach((voteButton) => {
-    voteButton.disabled = true;
+  contestantList.querySelectorAll(".vote-button").forEach((button) => {
+    button.disabled = true;
   });
+  let failureMessage;
   try {
     const { error } = await databaseClient.rpc("set_vote", {
       p_voter_id: getOrCreateParticipantId(),
@@ -139,11 +141,9 @@ async function castVote(contestantId) {
     });
     if (error) throw error;
     localStorage.setItem(voteKey, contestantId);
-    showToast(previousVote ? "Tvůj hlas byl změněn." : "Odhlasoval");
+    showToast(previousVote ? "Tvůj hlas byl změněn." : "Odhlasoval/a jsi.");
   } catch (error) {
-    failureMessage = error.code === "PGRST202" || error.message.includes("set_vote")
-      ? "Vote changes are not enabled in Supabase yet. Run the vote-update SQL in README.md, then refresh."
-      : `Your vote could not be changed: ${error.message}`;
+    failureMessage = `Hlas se nepodařilo odeslat: ${error.message}`;
   } finally {
     votingInProgress = false;
     await loadResults();
@@ -155,11 +155,11 @@ async function castVote(contestantId) {
 }
 
 async function withdrawVote() {
-  if (votingInProgress || !localStorage.getItem(voteKey)) return;
+  if (votingInProgress || !votingOpen || !localStorage.getItem(voteKey)) return;
   votingInProgress = true;
   withdrawVoteButton.disabled = true;
-  contestantList.querySelectorAll(".vote-button").forEach((voteButton) => {
-    voteButton.disabled = true;
+  contestantList.querySelectorAll(".vote-button").forEach((button) => {
+    button.disabled = true;
   });
 
   let failureMessage;
@@ -169,11 +169,9 @@ async function withdrawVote() {
     });
     if (error) throw error;
     localStorage.removeItem(voteKey);
-    showToast("Tvůj hlas byl vrácen, hlasuj znovu!");
+    showToast("Tvůj hlas byl vrácen.");
   } catch (error) {
-    failureMessage = error.code === "PGRST202" || error.message.includes("withdraw_vote")
-      ? "Vote withdrawal is not enabled in Supabase yet. Run the withdraw-vote SQL in README.md, then refresh."
-      : `Your vote could not be taken back: ${error.message}`;
+    failureMessage = `Hlas se nepodařilo vrátit: ${error.message}`;
   } finally {
     votingInProgress = false;
     await loadResults();
@@ -196,10 +194,10 @@ contestantForm.addEventListener("submit", async (event) => {
     if (error) throw error;
     contestantForm.reset();
     document.querySelector("#contestant-name").focus();
-    showToast("Name added.");
+    showToast("Soutěžící přidán/a.");
     await loadResults();
   } catch (error) {
-    showToast(`Costume could not be added: ${error.message}`);
+    showToast(`Soutěžícího se nepodařilo přidat: ${error.message}`);
   } finally {
     submitButton.disabled = false;
   }
@@ -210,16 +208,16 @@ withdrawVoteButton.addEventListener("click", withdrawVote);
 
 function start() {
   if (!window.supabase?.createClient) {
-    connectionStatus.textContent = "UNAVAILABLE";
-    showToast("Supabase could not load. Check your internet connection and reload.");
+    connectionStatus.textContent = "NEDOSTUPNÉ";
+    showToast("Supabase se nenačetlo. Zkontroluj připojení k internetu a obnov stránku.");
     refreshButton.disabled = true;
     contestantForm.querySelector("button").disabled = true;
     return;
   }
 
   if (SUPABASE_URL.includes("YOUR_PROJECT_ID") || SUPABASE_ANON_KEY.includes("YOUR_SUPABASE_ANON_KEY")) {
-    connectionStatus.textContent = "SETUP NEEDED";
-    showToast("Add your Supabase project URL and anon key in script.js to enable voting.");
+    connectionStatus.textContent = "VYŽADUJE NASTAVENÍ";
+    showToast("Nastav Supabase URL a anon key v script.js.");
     refreshButton.disabled = true;
     contestantForm.querySelector("button").disabled = true;
     return;

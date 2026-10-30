@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f7f4ef">
+    <meta name="description" content="Administrace hlasování o nejlepší kostým.">
+    <meta name="referrer" content="no-referrer">
+    <title>Administrace hlasování</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="admin.js" defer></script>
+  </head>
+  <body>
+    <main class="page-shell">
+      <header class="page-header">
+        <div>
+          <p class="eyebrow">Halloween costume poll</p>
+          <h1>Administrace hlasování</h1>
+          <p id="admin-connection-status" class="connection-status">Načítám</p>
+        </div>
+        <a class="text-link" href="./">Zpět na hlasování</a>
+      </header>
+
+      <section id="admin-access-error" class="poll-section access-message" role="status" aria-live="polite">
+        Načítám výsledky…
+      </section>
+
+      <div id="admin-dashboard" hidden>
+        <section class="admin-control-panel" aria-labelledby="admin-status-heading">
+          <div class="admin-status-copy">
+            <p class="eyebrow">Stav ankety</p>
+            <h2 id="admin-status-heading">Hlasování probíhá</h2>
+            <p id="admin-status-description">Účastníci mohou odesílat nebo měnit své hlasy.</p>
+          </div>
+          <div class="admin-actions">
+            <button id="admin-refresh-button" class="refresh-button" type="button">Obnovit výsledky</button>
+            <button id="voting-toggle-button" class="add-button" type="button">Ukončit hlasování</button>
+          </div>
+        </section>
+
+        <section class="poll-section admin-results-section" aria-labelledby="admin-results-heading">
+          <div class="section-heading">
+            <h2 id="admin-results-heading">Výsledky</h2>
+            <p class="total-votes"><span id="admin-total-votes">0</span> <span id="admin-vote-label">hlasů</span></p>
+          </div>
+          <div id="admin-contestant-list" class="admin-contestant-list" aria-live="polite">
+            <div class="loading-card">Načítám výsledky…</div>
+          </div>
+        </section>
+      </div>
+    </main>
+    <div id="admin-toast" class="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
